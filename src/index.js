@@ -1,121 +1,127 @@
-import axios from 'axios';
+import { imgApiSearch } from './fetch';
+import SimpleLightbox from "simplelightbox";
 import Notiflix from 'notiflix';
+import debounce from 'lodash.debounce';
+import "simplelightbox/dist/simple-lightbox.min.css";
 import "notiflix/dist/notiflix-3.2.5.min.css"
 import './css/styles.css';
 
 
-
+let searchQuerry = '';
+let pageNumber = 1;
+let totalHits = 0;
 
 const refs = { 
     form: document.querySelector('#search-form'),
-    queryContainer: document.querySelector('.query-container'),
+    queryContainer: document.querySelector('.gallery'),
 }
 
 
 
 refs.form.addEventListener('submit', onSubmit)
+window.addEventListener('scroll', debounce(onScroll, 250))
 
+async function onScroll() {
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
 
-
-function onSubmit(e) {
-    e.preventDefault();
-    let searchQuerry = e.target.elements[0].value.trim();
-    imgApiSearch(searchQuerry)
-        .then(response => markupCreation(response.hits))
-        .catch(error => {
-            Notiflix.Notify.failure("Oops, there is no country with that name")  
-        }) 
-}
-
-async function imgApiSearch(searchQuerry) {
-    try {
-        const response = await axios.get(`https://pixabay.com/api/?key=30973377-2fa9d5ab9ec6c16f13d3292f0&q=${searchQuerry}&image_type=photo&orientation=horizontal&safesearch=true`) 
-        return response.data;
-    } catch (error) {
-     console.log(error);   
+    if (clientHeight + scrollTop >= scrollHeight - 10) {
+        pageNumber += 1;
+        console.log('lol')
+        await loadingBallsCreate();
+        await imgApiSearchResult(searchQuerry, pageNumber)
+        await loadingBallsRemove();
     }
-    
 }
+
+async function onSubmit(e) {
+    refs.queryContainer.innerHTML = '';
+    pageNumber = 1;
+    totalHits = 0;
+
+    e.preventDefault();
+    searchQuerry = e.target.elements[0].value.trim();
+    await imgApiSearchResult(searchQuerry, pageNumber);
+    if (totalHits !== 0) {
+       await Notiflix.Notify.success(`Hooray! We found ${totalHits} images`) 
+    }
+}
+
+
 
 
 
 function markupCreation(array){
     console.log(array);
     let image = array.map(image => {
-        return `<img src='${image.pageURL}'><img>`
+        return `<div class='card'>
+            <a href="${image.largeImageURL}" class='image'>
+                <img class='preview-image' src="${image.previewURL}" alt="${image.tags}" loading="lazy" />
+            </a>
+            <div class="info">
+                <p class="info-item">
+                    <b>Likes:</b> <span>${image.likes}</span>
+                </p>
+                <p class="info-item">
+                    <b>Views:</b> <span>${image.views}</span>
+                </p>
+                <p class="info-item">
+                <b>Comments:</b> <span>${image.comments}</span>
+                </p>
+                <p class="info-item">
+                    <b>Downloads:</b> <span>${image.downloads}</span>
+                </p>
+            </div>
+            </div>`
     }).join('');
-    console.log(image);
-    refs.queryContainer.insertAdjacentHTML('afterbegin', image)
+
+    refs.queryContainer.insertAdjacentHTML('beforeend', image)
+
+    simpleLightBoxCreate();
+    scrollByBehaveour();
+    
 }
 
 
 
-// function onChange(e) {
-//     htmlClear();
-//     let countryName = e.target.value.trim();
-//     if (countryName!== '') {
-//         countryApiSearch(countryName)
-//             .then(country => createList(country))
-//             .catch(error => {
-//                 Notiflix.Notify.failure("Oops, there is no country with that name")  
-//         })  
-//     }
+
+function simpleLightBoxCreate() {
+    const gallery = new SimpleLightbox('.gallery a', { captionsData: 'alt', captionsDelay: '250s' });
+    
+}
+
+function scrollByBehaveour() {
+    const { height: cardHeight } = refs.queryContainer.firstElementChild.getBoundingClientRect();
+
+    window.scrollBy({
+        top: cardHeight * 2,
+        behavior: "smooth",
+    });   
+}
+
+function loadingBallsCreate() {
+    loadingBalls = `
+        <div class='loading-balls'>
+            <div class='ball1'></div>
+            <div class='ball2'></div>
+            <div class='ball3'></div>
+        </div>`
+    refs.queryContainer.insertAdjacentHTML('beforeend', loadingBalls)
+}
+
+function loadingBallsRemove(){
+    document.querySelector('.loading-balls').remove()
+}
+
+async function imgApiSearchResult(searchQuerry, pageNumber) {
+    try {
+        const response = await imgApiSearch(searchQuerry, pageNumber);
         
+        await markupCreation(response.hits);
+        totalHits = response.totalHits 
 
-// }
+    } catch (error) {
+        console.dir(error)
+        Notiflix.Notify.failure("Sorry, there are no images matching your search query. Please try again.");
+    }
 
-
-
-// function countryApiSearch(countryName) {
-//     return fetch(`https://restcountries.com/v3.1/name/${countryName}?fields=name,capital,population,flags,languages`)
-//         .then(response => {
-//             if (!response.ok) {
-//                 throw new Error(response.status);
-//             }
-//             return response.json()});
-// }
-
-// function createList(array) {
-//     if (array.length <= 10 && array.length !== 1) {
-//         htmlClear()
-//         createListItemMarkUp(array);
-//         refs.list.classList.remove('with-one-item')
-
-//     } else if (array.length > 10) {
-//         Notiflix.Notify.info("Too many matches found. Please enter a more specific name.")
-//         refs.list.classList.remove('with-one-item')
-
-//     } else if (array.length === 1) {
-//         htmlClear()
-//         createListItemMarkUp(array);
-//         createInfoListMarkUp(array);
-//         refs.list.classList.add('with-one-item')
-//     }
-
-// }
-
-// function htmlClear() {
-//     refs.list.innerHTML = '';
-//     refs.countryInfo.innerHTML = '';
-// }
-
-// function createListItemMarkUp(array) {
-//     const listPattern = array
-//         .map(country => 
-//              `<li class='list-item'><img src='${country.flags.svg}'></img><p>${country.name.official}</p></li>`
-//         )
-//         .join('')
-        
-//         refs.list.insertAdjacentHTML('afterbegin', listPattern);
-// }
-
-// function createInfoListMarkUp(array) {
-//         let infoPattern = 
-//             `<ul class='info-list'>
-//                 <li>Capital: <span>${array[0].capital}</span></li>
-//                 <li>Population: <span>${array[0].population}</span></li>
-//                 <li>Languages: <span>${Object.values(array[0].languages)}</span></li>
-//             </ul>`
-         
-//         refs.countryInfo.insertAdjacentHTML('afterbegin', infoPattern);
-// }
+}
