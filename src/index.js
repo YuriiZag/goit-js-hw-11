@@ -99,7 +99,7 @@ function scrollByBehaveour() {
 }
 
 function loadingBallsCreate() {
-    loadingBalls = `
+    let loadingBalls = `
         <div class='loading-balls'>
             <div class='ball1'></div>
             <div class='ball2'></div>
