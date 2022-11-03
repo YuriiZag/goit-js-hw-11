@@ -23,6 +23,7 @@
     "lodash.debounce": "^4.0.8",
     "modern-normalize": "^1.1.0",
     "notiflix": "^3.2.5",
+    "only-scrollbar": "^0.3.6",
     "simplelightbox": "^2.10.4"
   },
   "devDependencies": {

@@ -18,6 +18,7 @@ const refs = {
 
 
 
+
 refs.form.addEventListener('submit', onSubmit)
 window.addEventListener('scroll', debounce(onScroll, 250))
 
@@ -37,13 +38,17 @@ async function onSubmit(e) {
     refs.queryContainer.innerHTML = '';
     pageNumber = 1;
     totalHits = 0;
-
     e.preventDefault();
     searchQuerry = e.target.elements[0].value.trim();
-    await imgApiSearchResult(searchQuerry, pageNumber);
-    if (totalHits !== 0) {
-       await Notiflix.Notify.success(`Hooray! We found ${totalHits} images`) 
+
+    if (searchQuerry !== '') {
+        await imgApiSearchResult(searchQuerry, pageNumber);
+        if (totalHits !== 0) {
+            await Notiflix.Notify.success(`Hooray! We found ${totalHits} images`) 
+        } 
     }
+    
+
 }
 
 
@@ -75,10 +80,10 @@ function markupCreation(array){
     }).join('');
 
     refs.queryContainer.insertAdjacentHTML('beforeend', image)
-
+    
     simpleLightBoxCreate();
     scrollByBehaveour();
-    
+    console.dir(refs.queryContainer.childNodes.length === 40);
 }
 
 
@@ -92,10 +97,12 @@ function simpleLightBoxCreate() {
 function scrollByBehaveour() {
     const { height: cardHeight } = refs.queryContainer.firstElementChild.getBoundingClientRect();
 
-    window.scrollBy({
-        top: cardHeight * 2,
-        behavior: "smooth",
-    });   
+    if (refs.queryContainer.childNodes.length > 40) {
+        window.scrollBy({
+            top: cardHeight * 2,
+            behavior: "smooth",
+        });   
+    }
 }
 
 function loadingBallsCreate() {
